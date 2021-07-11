@@ -1,8 +1,7 @@
----
 name: "LDAP Authentication"
 guid: "958aad66-3784-4d2a-b89a-a7b6fab6e25c"
 imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-ldapauth.png"
-version: "11.0.0.0"
+version: "12"
 targetAbi: "10.7.0.0"
 framework: "net5.0"
 owner: "jellyfin"
@@ -15,5 +14,12 @@ category: "Authentication"
 artifacts:
   - "LDAP-Auth.dll"
   - "Novell.Directory.Ldap.NETStandard.dll"
-changelog: |
-  - Fix case-sensitive username check
+changelog: |2-
+  ### New features and improvements ###
+  - chore: plugin images (#79) @h1dden-da3m0n
+
+  ### Bug Fixes ###
+  - fix admin lookup condition (#82) @Bobonium
+
+  ### CI & build changes ###
+  - Update ci (#83) @h1dden-da3m0n
