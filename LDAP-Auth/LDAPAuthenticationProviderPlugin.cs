@@ -143,7 +143,53 @@ namespace Jellyfin.Plugin.LDAP_Auth
         /// <inheritdoc />
         public Task ChangePassword(User user, string newPassword)
         {
-            throw new NotImplementedException();
+            var ldapUser = LocateLdapUser(user.Username);
+
+            if (ldapUser == null)
+            {
+                return Task.FromException(new AuthenticationException("No users found in LDAP Query"));
+            }
+
+            using (var ldapClient = new LdapConnection {SecureSocketLayer = _config.UseSsl})
+            {
+                try
+                {
+                    if (_config.SkipSslVerify)
+                    {
+                        ldapClient.UserDefinedServerCertValidationDelegate +=
+                            LdapClient_UserDefinedServerCertValidationDelegate;
+                    }
+
+                    ldapClient.Connect(_config.LdapServer, _config.LdapPort);
+                    if (_config.UseStartTls)
+                    {
+                        ldapClient.StartTls();
+                    }
+
+                    ldapClient.Bind(_config.LdapBindUser, _config.LdapBindPassword);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Failed to Connect or Bind to server");
+                    throw new AuthenticationException("Failed to Connect or Bind to server");
+                }
+                finally
+                {
+                    ldapClient.UserDefinedServerCertValidationDelegate -=
+                        LdapClient_UserDefinedServerCertValidationDelegate;
+                }
+
+                if (!ldapClient.Bound)
+                {
+                    return Task.FromException(new AuthenticationException("Failed to Connect or Bind to server"));
+                }
+
+                var newPassAttr = new LdapAttribute("userPassword", newPassword);
+                var mod = new LdapModification(LdapModification.Replace, newPassAttr);
+                ldapClient.Modify(ldapUser.Dn, mod);
+            }
+
+            return Task.CompletedTask;
         }
 
         private static bool LdapClient_UserDefinedServerCertValidationDelegate(
